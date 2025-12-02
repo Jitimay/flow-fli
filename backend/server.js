@@ -12,6 +12,8 @@ const sensors = require('./hardware/sensors');
 const eventLogger = require('./analytics/eventLogger');
 const atpAgent = require('./atp/agentProtocol');
 const contractManager = require('./blockchain/contractManager');
+const fraudDetection = require('./security/fraudDetection');
+const governanceSystem = require('./governance/governanceSystem');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -88,28 +90,33 @@ const tools = {
   }
 };
 
-// Enhanced LLM reasoning with sensor data
+// Enhanced LLM reasoning with fraud and governance context
 async function processWithLLM(task) {
   try {
     const sensorData = sensors.getSensorData();
     const pumpStatus = pumpController.getStatus();
+    const governanceParams = governanceSystem.getSystemParameters();
     
-    const prompt = `You are FlowFli, an AI agent managing water pumps based on payments and sensor data.
+    const prompt = `You are FlowFli, an AI agent managing water pumps with advanced security and governance.
 
 Task: ${JSON.stringify(task)}
 Current pump status: ${JSON.stringify(pumpStatus)}
 Sensor data: ${JSON.stringify(sensorData)}
+Governance parameters: ${JSON.stringify(governanceParams)}
+${task.fraudAnalysis ? `Fraud analysis: ${JSON.stringify(task.fraudAnalysis)}` : ''}
 
 Rules:
-- Minimum $25 payment required
+- Minimum payment: $${governanceParams.minPaymentAmount}
 - Each $25 = 30 minutes pump time
-- Maximum 4 hours per session
+- Maximum duration: ${governanceParams.maxPumpDuration} minutes
+- Fraud threshold: ${governanceParams.fraudThreshold}%
+- Emergency mode: ${governanceSystem.isEmergencyMode()}
 - Check sensor alerts before activation
-- Stop pumps if pressure < 10 PSI or water level < 20%
+- Consider fraud risk in decisions
 
 Analyze and respond with JSON:
 {
-  "reasoning": "your analysis including sensor considerations",
+  "reasoning": "your analysis including security and governance considerations",
   "actions": [
     {"tool": "validatePayment", "params": {"paymentData": {...}}},
     {"tool": "controlPump", "params": {"pumpId": "pump1", "action": "on", "duration": 30}},
@@ -125,13 +132,15 @@ Analyze and respond with JSON:
 
     const result = JSON.parse(response.choices[0].message.content);
     
-    // Enhanced logging
+    // Enhanced logging with security context
     await eventLogger.logEvent('ai_reasoning', {
       task,
       reasoning: result.reasoning,
       actions: result.actions,
       sensorData,
-      pumpStatus
+      pumpStatus,
+      governanceParams,
+      fraudContext: task.fraudAnalysis || null
     });
 
     return result;
@@ -163,7 +172,7 @@ async function executeActions(actions) {
   return results;
 }
 
-// Enhanced payment processing
+// Enhanced payment processing with fraud detection
 app.post('/payment', async (req, res) => {
   try {
     logger.info('Payment received:', req.body);
@@ -177,14 +186,34 @@ app.post('/payment', async (req, res) => {
       ...req.body
     };
     
+    // Check governance emergency mode
+    if (governanceSystem.isEmergencyMode()) {
+      throw new Error('System in emergency mode - payments suspended');
+    }
+    
+    // Fraud detection analysis
+    const fraudAnalysis = await fraudDetection.analyzePayment(paymentData);
+    if (fraudAnalysis.shouldBlock) {
+      return res.status(403).json({
+        success: false,
+        error: 'Payment blocked by fraud detection',
+        risks: fraudAnalysis.risks,
+        riskScore: fraudAnalysis.riskScore
+      });
+    }
+    
     // Check sensor alerts first
     const alerts = sensors.getAlerts();
     if (alerts.some(alert => alert.type === 'critical')) {
       throw new Error('Critical sensor alert - pump activation blocked');
     }
     
-    // Process payment with AI
-    const task = { type: 'payment', data: paymentData };
+    // Process payment with AI (enhanced with fraud context)
+    const task = { 
+      type: 'payment', 
+      data: paymentData,
+      fraudAnalysis: fraudAnalysis
+    };
     const decision = await processWithLLM(task);
     const results = await executeActions(decision.actions);
     
@@ -202,7 +231,11 @@ app.post('/payment', async (req, res) => {
       paymentId: paymentData.paymentId,
       reasoning: decision.reasoning,
       actions: results,
-      alerts: alerts
+      alerts: alerts,
+      fraudAnalysis: {
+        riskScore: fraudAnalysis.riskScore,
+        recommendation: fraudAnalysis.recommendation
+      }
     });
     
   } catch (error) {
@@ -299,18 +332,55 @@ app.get('/alerts', (req, res) => {
   res.json(sensors.getAlerts());
 });
 
-// Blockchain endpoints
-app.get('/blockchain/balance/:address', async (req, res) => {
+// Governance endpoints
+app.post('/governance/proposal', async (req, res) => {
   try {
-    if (process.env.BLOCKCHAIN_ENABLED === 'true') {
-      const balance = await contractManager.getWaterBalance(req.params.address);
-      res.json({ balance, address: req.params.address });
-    } else {
-      res.json({ balance: 0, blockchain: false });
-    }
+    const proposal = await governanceSystem.createProposal(req.body);
+    res.json({ success: true, proposal });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+
+app.post('/governance/vote', async (req, res) => {
+  try {
+    const { proposalId, voter, support, votingPower } = req.body;
+    const result = await governanceSystem.vote(proposalId, voter, support, votingPower);
+    res.json(result);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.post('/governance/emergency-stop', async (req, res) => {
+  try {
+    const { adminAddress, reason } = req.body;
+    const result = await governanceSystem.emergencyStop(adminAddress, reason);
+    res.json(result);
+  } catch (error) {
+    res.status(403).json({ error: error.message });
+  }
+});
+
+app.get('/governance/stats', async (req, res) => {
+  const stats = await governanceSystem.getGovernanceStats();
+  res.json(stats);
+});
+
+app.get('/governance/proposals', async (req, res) => {
+  const proposals = await governanceSystem.getActiveProposals();
+  res.json(proposals);
+});
+
+// Security endpoints
+app.get('/security/report', async (req, res) => {
+  const report = await fraudDetection.getSecurityReport();
+  res.json(report);
+});
+
+app.get('/security/parameters', (req, res) => {
+  const parameters = governanceSystem.getSystemParameters();
+  res.json(parameters);
 });
 
 // Simulate payment endpoint for testing
