@@ -5,6 +5,14 @@ const axios = require('axios');
 const winston = require('winston');
 require('dotenv').config();
 
+// Import new modules
+const db = require('./database/connection');
+const pumpController = require('./hardware/pumpController');
+const sensors = require('./hardware/sensors');
+const eventLogger = require('./analytics/eventLogger');
+const atpAgent = require('./atp/agentProtocol');
+const contractManager = require('./blockchain/contractManager');
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -31,35 +39,26 @@ const openai = new OpenAI({
 app.use(cors());
 app.use(express.json());
 
-// In-memory storage for demo
-let pumpStatus = { pump1: 'off', pump2: 'off' };
-let paymentLogs = [];
-let reasoningLogs = [];
-let notifications = [];
-
-// Tools system
+// Enhanced tools system
 const tools = {
   async controlPump(pumpId, action, duration = 30) {
-    logger.info(`Controlling pump ${pumpId}: ${action} for ${duration}min`);
-    pumpStatus[pumpId] = action;
-    
-    // Auto-stop pump after duration
-    if (action === 'on') {
-      setTimeout(() => {
-        pumpStatus[pumpId] = 'off';
-        logger.info(`Pump ${pumpId} auto-stopped after ${duration} minutes`);
-      }, duration * 60 * 1000);
-    }
-    
-    return { success: true, pump: pumpId, status: action, duration };
+    const result = await pumpController.controlPump(pumpId, action, duration);
+    await eventLogger.logPumpAction(pumpId, action, duration);
+    return result;
   },
 
   async validatePayment(paymentData) {
     logger.info(`Validating payment ${paymentData.paymentId}`);
     
-    // Payment validation logic
     const isValid = paymentData.amount >= 25 && paymentData.customer;
-    const pumpTime = Math.floor(paymentData.amount / 25) * 30; // 30min per $25
+    const pumpTime = Math.floor(paymentData.amount / 25) * 30;
+    
+    // Log to database
+    await eventLogger.logPayment({
+      ...paymentData,
+      processed: isValid,
+      aiDecision: isValid ? 'Payment approved' : 'Payment rejected - insufficient amount'
+    });
     
     return { 
       valid: isValid, 
@@ -69,43 +68,52 @@ const tools = {
     };
   },
 
+  async getSensorData() {
+    const data = sensors.getSensorData();
+    await eventLogger.logEvent('sensor_reading', data);
+    return data;
+  },
+
   async sendNotification(message, type = 'info') {
     logger.info(`Notification [${type}]: ${message}`);
-    notifications.push({
-      timestamp: new Date().toISOString(),
-      message,
-      type
-    });
+    await eventLogger.logEvent('notification', { message, type });
     return { sent: true, message, type };
   },
 
-  async logActivity(activity) {
-    logger.info(`Activity: ${activity}`);
-    return { logged: true, activity };
+  async checkBlockchainBalance(userAddress) {
+    if (process.env.BLOCKCHAIN_ENABLED === 'true') {
+      return await contractManager.getWaterBalance(userAddress);
+    }
+    return { balance: 0, blockchain: false };
   }
 };
 
-// LLM reasoning function
+// Enhanced LLM reasoning with sensor data
 async function processWithLLM(task) {
   try {
-    const prompt = `You are FlowFli, an AI agent managing water pumps based on payments.
+    const sensorData = sensors.getSensorData();
+    const pumpStatus = pumpController.getStatus();
+    
+    const prompt = `You are FlowFli, an AI agent managing water pumps based on payments and sensor data.
 
 Task: ${JSON.stringify(task)}
 Current pump status: ${JSON.stringify(pumpStatus)}
+Sensor data: ${JSON.stringify(sensorData)}
 
 Rules:
 - Minimum $25 payment required
 - Each $25 = 30 minutes pump time
 - Maximum 4 hours per session
-- Only activate if payment is valid
+- Check sensor alerts before activation
+- Stop pumps if pressure < 10 PSI or water level < 20%
 
 Analyze and respond with JSON:
 {
-  "reasoning": "your analysis of the payment/task",
+  "reasoning": "your analysis including sensor considerations",
   "actions": [
     {"tool": "validatePayment", "params": {"paymentData": {...}}},
     {"tool": "controlPump", "params": {"pumpId": "pump1", "action": "on", "duration": 30}},
-    {"tool": "sendNotification", "params": {"message": "Pump activated for customer", "type": "success"}}
+    {"tool": "sendNotification", "params": {"message": "Pump activated", "type": "success"}}
   ]
 }`;
 
@@ -117,12 +125,13 @@ Analyze and respond with JSON:
 
     const result = JSON.parse(response.choices[0].message.content);
     
-    // Log reasoning
-    reasoningLogs.push({
-      timestamp: new Date().toISOString(),
+    // Enhanced logging
+    await eventLogger.logEvent('ai_reasoning', {
       task,
       reasoning: result.reasoning,
-      actions: result.actions
+      actions: result.actions,
+      sensorData,
+      pumpStatus
     });
 
     return result;
@@ -154,7 +163,7 @@ async function executeActions(actions) {
   return results;
 }
 
-// Payment processing endpoint (replaces n8n)
+// Enhanced payment processing
 app.post('/payment', async (req, res) => {
   try {
     logger.info('Payment received:', req.body);
@@ -163,28 +172,37 @@ app.post('/payment', async (req, res) => {
       paymentId: req.body.paymentId,
       amount: req.body.amount,
       customer: req.body.customer,
+      userAddress: req.body.userAddress,
       timestamp: new Date().toISOString(),
       ...req.body
     };
+    
+    // Check sensor alerts first
+    const alerts = sensors.getAlerts();
+    if (alerts.some(alert => alert.type === 'critical')) {
+      throw new Error('Critical sensor alert - pump activation blocked');
+    }
     
     // Process payment with AI
     const task = { type: 'payment', data: paymentData };
     const decision = await processWithLLM(task);
     const results = await executeActions(decision.actions);
     
-    // Log payment
-    paymentLogs.push({
-      ...paymentData,
-      processed: true,
-      aiDecision: decision.reasoning,
-      results
-    });
+    // Blockchain integration (if enabled)
+    if (process.env.BLOCKCHAIN_ENABLED === 'true' && paymentData.userAddress) {
+      try {
+        await contractManager.activatePumpOnChain(paymentData.userAddress, 30);
+      } catch (blockchainError) {
+        logger.warn(`Blockchain activation failed: ${blockchainError.message}`);
+      }
+    }
     
     res.json({
       success: true,
       paymentId: paymentData.paymentId,
       reasoning: decision.reasoning,
-      actions: results
+      actions: results,
+      alerts: alerts
     });
     
   } catch (error) {
@@ -193,21 +211,23 @@ app.post('/payment', async (req, res) => {
   }
 });
 
-// ATP webhook endpoint
+// ATP webhook with enhanced processing
 app.post('/webhook', async (req, res) => {
   try {
     logger.info('ATP webhook received:', req.body);
     
     const task = req.body;
     
-    // Process with LLM
-    const decision = await processWithLLM(task);
+    // Process with ATP agent
+    const atpResult = await atpAgent.processATPTask(task);
     
-    // Execute actions
+    // Also process with LLM for decision making
+    const decision = await processWithLLM(task);
     const results = await executeActions(decision.actions);
     
     res.json({
       success: true,
+      atpResult,
       reasoning: decision.reasoning,
       actions: results
     });
@@ -239,26 +259,58 @@ app.post('/execute', async (req, res) => {
   }
 });
 
-// Status endpoints
-app.get('/status', (req, res) => {
+// Enhanced status endpoints
+app.get('/status', async (req, res) => {
+  const sensorData = sensors.getSensorData();
+  const pumpStatus = pumpController.getStatus();
+  const alerts = sensors.getAlerts();
+  
   res.json({
     pumps: pumpStatus,
-    payments: paymentLogs.length,
-    reasoning: reasoningLogs.length,
-    notifications: notifications.length
+    sensors: sensorData,
+    alerts: alerts,
+    payments: await eventLogger.getPayments(1).then(p => p.length),
+    events: await eventLogger.getEvents(1).then(e => e.length),
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString()
   });
 });
 
-app.get('/logs/payments', (req, res) => {
-  res.json(paymentLogs.slice(-50));
+app.get('/logs/payments', async (req, res) => {
+  const payments = await eventLogger.getPayments(50);
+  res.json(payments);
 });
 
-app.get('/logs/reasoning', (req, res) => {
-  res.json(reasoningLogs.slice(-50));
+app.get('/logs/events', async (req, res) => {
+  const events = await eventLogger.getEvents(100);
+  res.json(events);
 });
 
-app.get('/logs/notifications', (req, res) => {
-  res.json(notifications.slice(-50));
+app.get('/logs/analytics/:metric', async (req, res) => {
+  const analytics = await eventLogger.getAnalytics(req.params.metric, 24);
+  res.json(analytics);
+});
+
+app.get('/sensors', (req, res) => {
+  res.json(sensors.getSensorData());
+});
+
+app.get('/alerts', (req, res) => {
+  res.json(sensors.getAlerts());
+});
+
+// Blockchain endpoints
+app.get('/blockchain/balance/:address', async (req, res) => {
+  try {
+    if (process.env.BLOCKCHAIN_ENABLED === 'true') {
+      const balance = await contractManager.getWaterBalance(req.params.address);
+      res.json({ balance, address: req.params.address });
+    } else {
+      res.json({ balance: 0, blockchain: false });
+    }
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // Simulate payment endpoint for testing
@@ -286,6 +338,40 @@ app.get('/health', (req, res) => {
   res.json({ status: 'healthy', timestamp: new Date().toISOString() });
 });
 
-app.listen(PORT, () => {
-  logger.info(`FlowFli backend running on port ${PORT}`);
-});
+// Initialize and start server
+async function startServer() {
+  try {
+    // Initialize database
+    logger.info('Initializing database...');
+    
+    // Start ATP agent
+    if (process.env.ATP_ENABLED === 'true') {
+      logger.info('Starting ATP agent...');
+      await atpAgent.registerAgent();
+      atpAgent.startStatusReporting();
+    }
+    
+    // Initialize blockchain
+    if (process.env.BLOCKCHAIN_ENABLED === 'true') {
+      logger.info('Initializing blockchain...');
+      await contractManager.registerAgent();
+      contractManager.listenToEvents();
+    }
+    
+    // Set hardware to mock mode by default
+    process.env.MOCK_HARDWARE = process.env.MOCK_HARDWARE || 'true';
+    
+    app.listen(PORT, () => {
+      logger.info(`FlowFli backend running on port ${PORT}`);
+      logger.info(`Mock hardware mode: ${process.env.MOCK_HARDWARE}`);
+      logger.info(`ATP enabled: ${process.env.ATP_ENABLED || 'false'}`);
+      logger.info(`Blockchain enabled: ${process.env.BLOCKCHAIN_ENABLED || 'false'}`);
+    });
+    
+  } catch (error) {
+    logger.error(`Server startup error: ${error.message}`);
+    process.exit(1);
+  }
+}
+
+startServer();
