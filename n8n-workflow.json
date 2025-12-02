@@ -1,0 +1,193 @@
+{
+  "name": "FlowFli Payment Processing",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "payment-webhook",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-node",
+      "name": "Payment Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4",
+        "messages": {
+          "messageValues": [
+            {
+              "role": "system",
+              "message": "You are processing a water payment. Analyze the payment data and determine if pumps should be activated. Respond with JSON: {\"valid\": boolean, \"pumpAction\": \"on/off\", \"duration\": minutes, \"message\": \"explanation\"}"
+            },
+            {
+              "role": "user", 
+              "message": "Payment data: {{ JSON.stringify($json) }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "openai-node",
+      "name": "Analyze Payment",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "functionCode": "const aiResponse = JSON.parse($('Analyze Payment').first().json.message.content);\n\nreturn {\n  json: {\n    command: 'process_payment',\n    type: 'payment',\n    paymentId: $json.paymentId,\n    amount: $json.amount,\n    customer: $json.customer,\n    aiDecision: aiResponse,\n    timestamp: new Date().toISOString()\n  }\n};"
+      },
+      "id": "function-node",
+      "name": "Format Command",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:3001/webhook",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "http-node",
+      "name": "Send to FlowFli Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.success }}",
+              "operation": "equal",
+              "value2": "true"
+            }
+          ]
+        }
+      },
+      "id": "if-node",
+      "name": "Check Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1120, 300]
+    },
+    {
+      "parameters": {
+        "message": "✅ FlowFli: Payment processed successfully\\nCustomer: {{ $('Format Command').first().json.customer }}\\nAmount: ${{ $('Format Command').first().json.amount }}\\nPump Status: {{ $json.reasoning }}",
+        "chatId": "YOUR_TELEGRAM_CHAT_ID"
+      },
+      "id": "telegram-node",
+      "name": "Success Notification",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [1340, 200]
+    },
+    {
+      "parameters": {
+        "message": "❌ FlowFli: Payment processing failed\\nError: {{ $json.error }}",
+        "chatId": "YOUR_TELEGRAM_CHAT_ID"
+      },
+      "id": "telegram-error-node", 
+      "name": "Error Notification",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1,
+      "position": [1340, 400]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({\"received\": true, \"timestamp\": new Date().toISOString()}) }}"
+      },
+      "id": "response-node",
+      "name": "Webhook Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1560, 300]
+    }
+  ],
+  "connections": {
+    "Payment Webhook": {
+      "main": [
+        [
+          {
+            "node": "Analyze Payment",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Payment": {
+      "main": [
+        [
+          {
+            "node": "Format Command",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Format Command": {
+      "main": [
+        [
+          {
+            "node": "Send to FlowFli Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send to FlowFli Agent": {
+      "main": [
+        [
+          {
+            "node": "Check Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Success": {
+      "main": [
+        [
+          {
+            "node": "Success Notification",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Notification",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Webhook Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "versionId": "1"
+}
