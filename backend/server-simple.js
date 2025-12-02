@@ -193,6 +193,50 @@ app.get('/health', (req, res) => {
   });
 });
 
+// ATP test page
+app.get('/atp/webhook', (req, res) => {
+  res.send(`
+    <h1>🤖 FlowFli ATP Webhook</h1>
+    <p>This endpoint accepts POST requests for ATP integration.</p>
+    
+    <h2>Test ATP Integration:</h2>
+    <button onclick="testHealth()">Health Check</button>
+    <button onclick="testPayment()">Test Payment ($25)</button>
+    <button onclick="testFraud()">Test Fraud ($10)</button>
+    
+    <div id="result" style="margin-top: 20px; padding: 10px; background: #f0f0f0;"></div>
+    
+    <script>
+      async function testHealth() {
+        const response = await fetch('/atp/webhook', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({type: 'health_check'})
+        });
+        document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(await response.json(), null, 2) + '</pre>';
+      }
+      
+      async function testPayment() {
+        const response = await fetch('/atp/webhook', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({type: 'payment_received', payload: {amount: 25, customer: 'test_user'}})
+        });
+        document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(await response.json(), null, 2) + '</pre>';
+      }
+      
+      async function testFraud() {
+        const response = await fetch('/atp/webhook', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({type: 'payment_received', payload: {amount: 10, customer: 'test_user'}})
+        });
+        document.getElementById('result').innerHTML = '<pre>' + JSON.stringify(await response.json(), null, 2) + '</pre>';
+      }
+    </script>
+  `);
+});
+
 // ATP webhook endpoint
 app.post('/atp/webhook', async (req, res) => {
   try {

@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlowFli - AI Water Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', sans-serif; }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(59, 130, 246, 0.6); }
+        }
+        
+        @keyframes water-flow {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+        
+        @keyframes gradient-shift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .float-animation { animation: float 3s ease-in-out infinite; }
+        .pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+        .water-flow { animation: water-flow 3s linear infinite; }
+        
+        .glass-morphism {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .holographic {
+            background: linear-gradient(45deg, #ff006e, #8338ec, #3a86ff, #06ffa5);
+            background-size: 400% 400%;
+            animation: gradient-shift 3s ease infinite;
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 relative overflow-x-hidden">
+    <!-- Animated Background -->
+    <div class="fixed inset-0 z-0">
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(120,119,198,0.3),rgba(255,255,255,0))]"></div>
+        <div class="absolute top-0 left-1/4 w-96 h-96 bg-blue-500/20 rounded-full blur-3xl animate-pulse"></div>
+        <div class="absolute bottom-0 right-1/4 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-pulse"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="relative z-50 glass-morphism border-b border-white/10">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <div class="relative">
+                        <div class="absolute inset-0 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full blur-lg opacity-75 animate-pulse"></div>
+                        <div class="relative bg-gradient-to-r from-blue-500 to-cyan-500 p-3 rounded-full">
+                            💧
+                        </div>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                            FlowFli
+                        </h1>
+                        <p class="text-xs text-gray-300 flex items-center space-x-1">
+                            🧠 <span>AI Water Management</span> ⚡
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="relative z-10 container mx-auto px-6 py-8">
+        <!-- Hero Section -->
+        <div class="text-center space-y-4 py-8">
+            <div class="relative inline-block">
+                <div class="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 blur-2xl opacity-50 animate-pulse"></div>
+                <h1 class="relative text-6xl font-black bg-gradient-to-r from-blue-400 via-purple-400 to-cyan-400 bg-clip-text text-transparent">
+                    FlowFli Dashboard
+                </h1>
+            </div>
+            <p class="text-xl text-gray-300 max-w-2xl mx-auto">
+                Revolutionary AI-powered water management system with ATP integration
+            </p>
+            <div class="flex justify-center space-x-4 mt-6">
+                <div class="glass-morphism px-4 py-2 rounded-full">
+                    <span class="text-green-400 font-semibold">🟢 System Online</span>
+                </div>
+                <div class="glass-morphism px-4 py-2 rounded-full">
+                    <span class="text-blue-400 font-semibold">🤖 AI Active</span>
+                </div>
+                <div class="glass-morphism px-4 py-2 rounded-full">
+                    <span class="text-purple-400 font-semibold">⛓️ ATP Ready</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Pump Control Card -->
+            <div class="glass-morphism rounded-2xl p-6 hover:bg-white/20 transition-all duration-500 hover:scale-105">
+                <div class="flex items-center space-x-3 mb-6">
+                    <div class="relative">
+                        <div class="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-400 rounded-lg blur-md opacity-75"></div>
+                        <div class="relative bg-gradient-to-r from-blue-500 to-purple-500 p-2 rounded-lg text-white">
+                            💧
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-bold text-white">Pump Control</h3>
+                </div>
+                <div id="pump-status" class="space-y-4">
+                    <!-- Pump status will be loaded here -->
+                </div>
+            </div>
+
+            <!-- AI Analytics Card -->
+            <div class="glass-morphism rounded-2xl p-6 hover:bg-white/20 transition-all duration-500 hover:scale-105">
+                <div class="flex items-center space-x-3 mb-6">
+                    <div class="relative">
+                        <div class="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-400 rounded-lg blur-md opacity-75"></div>
+                        <div class="relative bg-gradient-to-r from-blue-500 to-purple-500 p-2 rounded-lg text-white">
+                            🧠
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-bold text-white">AI Analytics</h3>
+                </div>
+                <div id="analytics" class="space-y-4">
+                    <!-- Analytics will be loaded here -->
+                </div>
+            </div>
+
+            <!-- System Control Card -->
+            <div class="glass-morphism rounded-2xl p-6 hover:bg-white/20 transition-all duration-500 hover:scale-105">
+                <div class="flex items-center space-x-3 mb-6">
+                    <div class="relative">
+                        <div class="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-400 rounded-lg blur-md opacity-75"></div>
+                        <div class="relative bg-gradient-to-r from-blue-500 to-purple-500 p-2 rounded-lg text-white">
+                            ⚙️
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-bold text-white">System Control</h3>
+                </div>
+                <div class="space-y-3">
+                    <button onclick="activatePump()" class="w-full group relative overflow-hidden bg-gradient-to-r from-emerald-500 to-green-600 text-white px-4 py-3 rounded-xl font-bold transition-all duration-300 hover:scale-105 hover:shadow-2xl">
+                        <span>▶️ Activate Pump 1</span>
+                    </button>
+                    <button onclick="stopPump()" class="w-full group relative overflow-hidden bg-gradient-to-r from-red-500 to-pink-600 text-white px-4 py-3 rounded-xl font-bold transition-all duration-300 hover:scale-105 hover:shadow-2xl">
+                        <span>⏹️ Stop Pump 1</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Quick Actions Card -->
+            <div class="glass-morphism rounded-2xl p-6 hover:bg-white/20 transition-all duration-500 hover:scale-105">
+                <div class="flex items-center space-x-3 mb-6">
+                    <div class="relative">
+                        <div class="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-400 rounded-lg blur-md opacity-75"></div>
+                        <div class="relative bg-gradient-to-r from-blue-500 to-purple-500 p-2 rounded-lg text-white">
+                            ⚡
+                        </div>
+                    </div>
+                    <h3 class="text-xl font-bold text-white">Quick Actions</h3>
+                </div>
+                <div class="space-y-3">
+                    <button onclick="testPayment(25)" class="w-full holographic text-white px-4 py-3 rounded-xl font-bold transition-all duration-300 hover:scale-105">
+                        💰 $25 Payment
+                    </button>
+                    <button onclick="testPayment(50)" class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-4 py-3 rounded-xl font-bold transition-all duration-300 hover:scale-105">
+                        💰 $50 Payment
+                    </button>
+                    <button onclick="testPayment(10)" class="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white px-4 py-3 rounded-xl font-bold transition-all duration-300 hover:scale-105">
+                        💰 $10 (Invalid)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Activity Feed -->
+        <div class="glass-morphism rounded-2xl p-6">
+            <div class="flex items-center space-x-3 mb-6">
+                <div class="relative">
+                    <div class="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-400 rounded-lg blur-md opacity-75"></div>
+                    <div class="relative bg-gradient-to-r from-blue-500 to-purple-500 p-2 rounded-lg text-white">
+                        📊
+                    </div>
+                </div>
+                <h3 class="text-xl font-bold text-white">Live Activity Stream</h3>
+            </div>
+            <div id="activity-feed" class="space-y-4 max-h-96 overflow-y-auto">
+                <!-- Activity feed will be loaded here -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div id="loading" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 hidden">
+        <div class="glass-morphism rounded-2xl p-8 text-center">
+            <div class="relative">
+                <div class="w-16 h-16 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
+            </div>
+            <p class="text-white font-semibold">Processing AI Decision...</p>
+        </div>
+    </div>
+
+    <script>
+        let status = {};
+        
+        // Fetch system status
+        async function fetchStatus() {
+            try {
+                const response = await fetch('/api/status');
+                status = await response.json();
+                updateUI();
+            } catch (error) {
+                console.error('Failed to fetch status:', error);
+            }
+        }
+        
+        // Update UI with current status
+        function updateUI() {
+            // Update pump status
+            const pumpStatusEl = document.getElementById('pump-status');
+            pumpStatusEl.innerHTML = Object.entries(status.pumps || {}).map(([pump, state]) => `
+                <div class="glass-morphism p-4 rounded-xl">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-4 h-4 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full animate-pulse"></div>
+                            <span class="font-bold text-white text-lg">${pump.toUpperCase()}</span>
+                        </div>
+                        <span class="px-4 py-2 rounded-full text-sm font-bold ${state === 'on' ? 'bg-gradient-to-r from-emerald-400 to-green-500 text-white animate-pulse' : 'bg-gradient-to-r from-gray-600 to-gray-700 text-gray-200'}">
+                            ${state === 'on' ? '💧 ON' : '⭕ OFF'}
+                        </span>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Update analytics
+            const analyticsEl = document.getElementById('analytics');
+            analyticsEl.innerHTML = [
+                { label: 'Payments', value: status.payments || 0, color: 'from-blue-400 to-blue-600', icon: '💰' },
+                { label: 'AI Decisions', value: status.reasoning || 0, color: 'from-purple-400 to-purple-600', icon: '🧠' },
+                { label: 'Notifications', value: status.notifications || 0, color: 'from-pink-400 to-pink-600', icon: '🔔' }
+            ].map(stat => `
+                <div class="glass-morphism p-3 rounded-lg">
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-lg">${stat.icon}</span>
+                            <span class="text-gray-300">${stat.label}</span>
+                        </div>
+                        <div class="text-2xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent">
+                            ${stat.value}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Test payment
+        async function testPayment(amount) {
+            showLoading(true);
+            try {
+                const response = await fetch('/api/simulate-payment', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ amount, customer: `user_${Date.now()}` })
+                });
+                const result = await response.json();
+                console.log('Payment result:', result);
+                await fetchStatus();
+                await fetchActivityFeed();
+            } catch (error) {
+                console.error('Payment failed:', error);
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        // Pump controls
+        async function activatePump() {
+            showLoading(true);
+            // Simulate pump activation
+            status.pumps.pump1 = 'on';
+            updateUI();
+            setTimeout(() => {
+                status.pumps.pump1 = 'off';
+                updateUI();
+            }, 30000); // Auto-stop after 30 seconds for demo
+            showLoading(false);
+        }
+        
+        async function stopPump() {
+            status.pumps.pump1 = 'off';
+            updateUI();
+        }
+        
+        // Fetch activity feed
+        async function fetchActivityFeed() {
+            try {
+                const [payments, reasoning, notifications] = await Promise.all([
+                    fetch('/api/logs/payments').then(r => r.json()),
+                    fetch('/api/logs/reasoning').then(r => r.json()),
+                    fetch('/api/logs/notifications').then(r => r.json())
+                ]);
+                
+                const activities = [
+                    ...payments.map(p => ({
+                        timestamp: p.timestamp,
+                        type: 'payment',
+                        message: `💰 Payment: $${p.amount} - ${p.processed ? 'Processed' : 'Failed'}`
+                    })),
+                    ...reasoning.map(r => ({
+                        timestamp: r.timestamp,
+                        type: 'reasoning',
+                        message: `🤖 AI: ${r.reasoning.substring(0, 80)}...`
+                    })),
+                    ...notifications.map(n => ({
+                        timestamp: n.timestamp,
+                        type: n.type,
+                        message: `📢 ${n.message}`
+                    }))
+                ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+                
+                const feedEl = document.getElementById('activity-feed');
+                if (activities.length === 0) {
+                    feedEl.innerHTML = `
+                        <div class="text-center py-12">
+                            <div class="w-20 h-20 glass-morphism rounded-full flex items-center justify-center mx-auto mb-4">
+                                🕐
+                            </div>
+                            <p class="text-gray-300 text-lg font-semibold">Waiting for Activity</p>
+                            <p class="text-gray-400 text-sm mt-2">Real-time events will appear here</p>
+                        </div>
+                    `;
+                } else {
+                    feedEl.innerHTML = activities.slice(0, 10).map((activity, index) => `
+                        <div class="glass-morphism p-4 rounded-xl transition-all duration-500 hover:scale-105">
+                            <div class="flex items-start space-x-4">
+                                <div class="p-2 bg-gradient-to-r from-gray-800 to-gray-900 rounded-lg">
+                                    ${activity.type === 'payment' ? '💰' : activity.type === 'reasoning' ? '🤖' : '📢'}
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-white font-medium">${activity.message}</p>
+                                    <p class="text-xs text-gray-400 mt-1">
+                                        🕐 ${new Date(activity.timestamp).toLocaleString()}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Failed to fetch activity feed:', error);
+            }
+        }
+        
+        // Show/hide loading
+        function showLoading(show) {
+            document.getElementById('loading').classList.toggle('hidden', !show);
+        }
+        
+        // Initialize
+        fetchStatus();
+        fetchActivityFeed();
+        
+        // Auto-refresh every 5 seconds
+        setInterval(() => {
+            fetchStatus();
+            fetchActivityFeed();
+        }, 5000);
+    </script>
+</body>
+</html>
