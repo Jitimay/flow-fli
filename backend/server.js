@@ -10,7 +10,7 @@ const db = require('./database/connection');
 const pumpController = require('./hardware/pumpController');
 const sensors = require('./hardware/sensors');
 const eventLogger = require('./analytics/eventLogger');
-const atpAgent = require('./atp/agentProtocol');
+const atpIntegration = require('./atp/atpIntegration');
 const contractManager = require('./blockchain/contractManager');
 const fraudDetection = require('./security/fraudDetection');
 const governanceSystem = require('./governance/governanceSystem');
@@ -244,31 +244,34 @@ app.post('/payment', async (req, res) => {
   }
 });
 
-// ATP webhook with enhanced processing
-app.post('/webhook', async (req, res) => {
+// ATP webhook endpoint (IQAI integration)
+app.post('/atp/webhook', async (req, res) => {
   try {
     logger.info('ATP webhook received:', req.body);
     
-    const task = req.body;
-    
-    // Process with ATP agent
-    const atpResult = await atpAgent.processATPTask(task);
-    
-    // Also process with LLM for decision making
-    const decision = await processWithLLM(task);
-    const results = await executeActions(decision.actions);
-    
-    res.json({
-      success: true,
-      atpResult,
-      reasoning: decision.reasoning,
-      actions: results
-    });
+    const result = await atpIntegration.handleATPWebhook(req.body);
+    res.json(result);
     
   } catch (error) {
-    logger.error('Webhook error:', error);
+    logger.error('ATP webhook error:', error);
     res.status(500).json({ error: error.message });
   }
+});
+
+// ATP registration info endpoint
+app.get('/atp/config', async (req, res) => {
+  try {
+    const config = atpIntegration.getATPLaunchConfig();
+    res.json(config);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Health check for ATP
+app.get('/health', async (req, res) => {
+  const health = await atpIntegration.healthCheck();
+  res.json(health);
 });
 
 // Manual execution endpoint
@@ -414,11 +417,11 @@ async function startServer() {
     // Initialize database
     logger.info('Initializing database...');
     
-    // Start ATP agent
+    // Start ATP integration
     if (process.env.ATP_ENABLED === 'true') {
-      logger.info('Starting ATP agent...');
-      await atpAgent.registerAgent();
-      atpAgent.startStatusReporting();
+      logger.info('Preparing ATP integration...');
+      const atpConfig = await atpIntegration.registerForATP();
+      logger.info('ATP registration config ready:', atpConfig);
     }
     
     // Initialize blockchain
