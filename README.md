@@ -7,10 +7,10 @@ AI-powered autonomous water pump control system ready for IQAI's Agent Tokenizat
 ## 🎯 **Hackathon Compliance**
 
 ### ✅ **ATP Integration Ready**
-- **No Smart Contracts**: Uses IQAI's ATP for on-chain functionality
-- **Webhook Integration**: `/atp/webhook` endpoint for ATP communication
-- **Agent Metadata**: Complete agent description and capabilities
-- **Health Monitoring**: ATP-compatible health checks
+- **Tokenized Agent**: FlowFli will be registered on ATP as FLI token
+- **Off-chain Logic**: Complete autonomous AI agent runs independently  
+- **Agent Metadata**: Ready for ATP registration with full capabilities
+- **Optional Enhancement**: ATP plugin integration for advanced features
 
 ### ✅ **Core Features**
 - 🤖 **Autonomous AI Reasoning**: OpenAI GPT-3.5-turbo makes all decisions

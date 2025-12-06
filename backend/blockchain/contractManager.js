@@ -3,18 +3,27 @@ const logger = require('winston');
 
 class ContractManager {
   constructor() {
-    this.web3 = new Web3(process.env.RPC_URL || 'http://localhost:8545');
-    this.waterCreditAddress = process.env.WATER_CREDIT_CONTRACT;
-    this.agentControllerAddress = process.env.AGENT_CONTROLLER_CONTRACT;
-    this.privateKey = process.env.AGENT_PRIVATE_KEY;
-    
-    if (this.privateKey) {
+    // Only initialize blockchain if enabled and configured
+    if (process.env.BLOCKCHAIN_ENABLED === 'true' && process.env.AGENT_PRIVATE_KEY) {
+      this.web3 = new Web3(process.env.RPC_URL || 'http://localhost:8545');
+      this.waterCreditAddress = process.env.WATER_CREDIT_CONTRACT;
+      this.agentControllerAddress = process.env.AGENT_CONTROLLER_CONTRACT;
+      this.privateKey = process.env.AGENT_PRIVATE_KEY;
+      
       this.account = this.web3.eth.accounts.privateKeyToAccount(this.privateKey);
       this.web3.eth.accounts.wallet.add(this.account);
+      this.enabled = true;
+    } else {
+      this.enabled = false;
+      logger.info('Blockchain disabled - running in mock mode');
     }
   }
 
   async purchaseWaterCredits(userAddress, amount) {
+    if (!this.enabled) {
+      return { success: false, message: 'Blockchain disabled' };
+    }
+    
     try {
       const waterCredit = new this.web3.eth.Contract(
         require('../contracts/WaterCredit.json').abi,

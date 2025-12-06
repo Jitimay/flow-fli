@@ -6,18 +6,31 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "build": "echo 'Build complete'",
+    "adk": "tsx flowfli-simple.ts",
+    "adk:dev": "tsx watch flowfli-adk.ts",
+    "adk:start": "tsx flowfli-adk.ts",
+    "build": "tsc",
     "test": "echo 'Tests passed'"
   },
   "dependencies": {
-    "express": "^4.18.2",
+    "@iqai/adk": "^0.5.7",
+    "@types/node": "^24.10.1",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
+    "express": "^4.18.2",
     "openai": "^4.20.1",
-    "winston": "^3.11.0",
-    "path": "^0.12.7"
+    "path": "^0.12.7",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "winston": "^3.11.0"
   },
-  "keywords": ["ai", "water", "iot", "atp", "hackathon"],
+  "keywords": [
+    "ai",
+    "water",
+    "iot",
+    "atp",
+    "hackathon"
+  ],
   "author": "FlowFli Team",
   "license": "MIT"
 }
