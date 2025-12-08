@@ -37,6 +37,14 @@ let paymentLogs = [];
 let reasoningLogs = [];
 let notifications = [];
 
+// Guest user for testing
+const guestUser = {
+  username: 'guest',
+  password: 'demo123',
+  balance: 100,
+  authenticated: false
+};
+
 // Mock systems
 const mockSensors = {
   getSensorData() {
@@ -134,8 +142,8 @@ Respond with JSON:
     logger.error('LLM error:', error);
     // Fallback logic
     const isValid = task.data.amount >= 25;
-    return {
-      reasoning: `Payment of $${task.data.amount} ${isValid ? 'approved' : 'rejected'} - ${isValid ? 'sufficient funds' : 'below minimum $25'}`,
+    const fallbackDecision = {
+      reasoning: `Payment of $${task.data.amount} ${isValid ? 'approved' : 'rejected'} - ${isValid ? 'sufficient funds' : 'below minimum $25'} (AI fallback)`,
       actions: isValid ? [
         {"tool": "validatePayment", "params": {"paymentData": task.data}},
         {"tool": "controlPump", "params": {"pumpId": "pump1", "action": "on", "duration": Math.floor(task.data.amount / 25) * 30}}
@@ -143,6 +151,17 @@ Respond with JSON:
         {"tool": "sendNotification", "params": {"message": "Payment rejected - insufficient amount", "type": "error"}}
       ]
     };
+    
+    // Log the fallback decision
+    reasoningLogs.push({ 
+      timestamp: new Date().toISOString(), 
+      task, 
+      reasoning: fallbackDecision.reasoning, 
+      actions: fallbackDecision.actions,
+      fallback: true 
+    });
+    
+    return fallbackDecision;
   }
 }
 
@@ -204,9 +223,25 @@ app.get('/api/logs/notifications', (req, res) => {
   res.json(notifications.slice(-50));
 });
 
+// Guest login
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+  if (username === guestUser.username && password === guestUser.password) {
+    guestUser.authenticated = true;
+    res.json({ success: true, user: 'guest', balance: guestUser.balance });
+  } else {
+    res.status(401).json({ success: false, error: 'Invalid credentials' });
+  }
+});
+
 // Payment processing
 app.post('/api/simulate-payment', async (req, res) => {
   try {
+    // Guest user check
+    if (!guestUser.authenticated) {
+      return res.status(401).json({ success: false, error: 'Please login as guest first' });
+    }
+    
     const paymentData = {
       paymentId: `test_${Date.now()}`,
       amount: req.body.amount,

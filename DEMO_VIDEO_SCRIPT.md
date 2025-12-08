@@ -1,99 +1,95 @@
-# FlowFli Demo Video Script (2:30)
+MajiSafe 
 
-## **[0:00-0:15] Hook & Problem**
-*[Screen: Rural village, water statistics]*
+We create intelligent, affordable IoT and AI systems that improve daily services, from vending to public access tools, for real community impact.
 
-**"2.2 billion people still lack access to clean water.**
+## Inspiration
 
-**Not because pumps don't exist — but because payments, monitoring, and management systems fail.**
+In many regions, water pumps fail unexpectedly because no one notices problems early. We wanted to build a fast, low-cost, offline-friendly system that lets communities monitor pumps using simple SMS commands — no smartphones required.
 
-**So we built FlowFli: An autonomous AI water agent that runs itself."**
+And that’s how MajiSafe was built:
+A real, hardware-powered smart water pump controller using IoT, SMS, and AI anomaly detection.
 
-## **[0:15-0:45] Solution + Live Demo**
-*[Screen: FlowFli dashboard, IQAI reasoning panel]*
+## What it does
 
-**"FlowFli uses IQAI's ADK-TS framework to run an autonomous water system.**
+MajiSafe is NOT a simulation — it is a working, physical water pump system that can be controlled and monitored using SMS.
 
-**Now I'll purchase water for $50.**
+It provides:
 
-**Watch this: FlowFli receives the payment → reasons through the rules → checks fraud → confirms the amount → and autonomously activates the pump for 60 minutes.**
+📡 Real-time sensor readings (flow, pressure, vibration)
 
-**No human. No manual coding. The agent decides everything in real time."**
+🔧 Remote pump ON/OFF via SMS
 
-## **[0:45-1:15] Technical Power**
-*[Screen: Code + agent graph + sensor readings]*
+📨 Alerts when issues appear
 
-**"FlowFli is entirely agent-controlled. Built using IQAI's ADK-TS with OpenAI's GPT-3.5:**
+🤖 AI-based anomaly detection
 
-**• Autonomous fraud detection**
-**• Live sensor monitoring** 
-**• Intelligent pump scheduling**
-**• Decision logs for transparency**
+🖥️ Dashboard for monitoring water usage
 
-**Here's a failed payment example: A $10 request is blocked. FlowFli explains why and refuses to activate the pump."**
+📶 Works even without internet — only GSM SMS
 
-## **[1:15-1:45] Real-World Impact**
-*[Screen: Water level data, user events, pump activity]*
+It solves breakdowns, improves transparency, and keeps pumps functional.
 
-**"This isn't theoretical. FlowFli solves real problems for real communities:**
+## How we built it
 
-**• Reliable water access**
-**• Fair pricing**
-**• Sensor-based water protection**
-**• Remote diagnostics**
-**• Tamper-proof accountability**
+Hardware:
 
-**Every pump decision. Every transaction. Every water event — is logged and explainable."**
+ESP32 + SIM800L for GSM communication
 
-## **[1:45-2:10] ATP Integration**
-*[Screen: ATP interface]*
+Flow sensor for water measurement
 
-**"FlowFli is ready for IQAI's Agent Tokenization Platform.**
+Pressure & vibration sensors for pump health
 
-**With ATP, FlowFli becomes:**
-**• A tokenized on-chain agent**
-**• Owned by the community**
-**• Monetizable, scalable, and transparent**
-**• Deployable without writing a smart contract**
+Real water pump motor
 
-**This is the future of decentralized public utilities."**
+Relay control system
 
-## **[2:10-2:30] Closing**
-*[Screen: FlowFli logo + repo]*
+Software:
 
-**"FlowFli — where AI, IoT, and blockchain come together to deliver clean water autonomously.**
+SMS command parser
 
-**Built for the IQAI Agent Arena. Built for impact."**
+AI anomaly detector (Python)
 
----
+REST API for the dashboard
 
-## 🎬 **Production Notes**
+Realtime UI built with modern JS
 
-### **Visual Requirements:**
-- FlowFli dashboard screenshots
-- Payment processing demo (success + failure)
-- ADK-TS code snippets
-- Real-time AI decision logs
-- Sensor data visualization
-- ATP platform interface
+The ESP32 reads sensor data, sends logs through SMS, receives commands, and controls the pump physically.
 
-### **Demo Flow:**
-1. Show problem (water statistics)
-2. Live $50 payment → pump activation
-3. Live $10 payment → fraud blocking
-4. System status and sensor data
-5. ATP integration preview
+## Challenges we faced
 
-### **Key Messages:**
-- **Autonomous**: AI makes all decisions
-- **Real Impact**: Solves actual water problems
-- **Technical Excellence**: ADK-TS + OpenAI integration
-- **ATP Ready**: Tokenization platform prepared
+Optimizing sensor accuracy on low-cost hardware
 
-### **Tone & Pace:**
-- Professional but accessible
-- Fast-paced with clear demonstrations
-- Emphasize innovation and social impact
-- End with strong call to action
+Making SMS communication fast and reliable
 
-**🏆 This script positions FlowFli as the clear winner!**
+Managing power usage
+
+Ensuring the pump responds safely under varying water pressure
+
+Building the dashboard and AI module within hackathon time
+
+## Accomplishments
+
+Fully functional pump system running live
+
+Real SMS-based control
+
+Real-time monitoring dashboard
+
+AI detecting unusual pump behavior
+
+Successfully tested with real water flow
+
+## What’s next
+
+Add mobile payments (Lumicash, M-Pesa)
+
+Deploy first installations
+
+Add predictive maintenance
+
+Package as low-cost IoT kit
+
+
+https://github.com/Jitimay/maji-safe
+
+https://www.youtube.com/watch?v=1B3T0LDmfFI&t=11s
